@@ -4,24 +4,20 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+
+#pragma warning disable IDE0063
 
 namespace Malie_Script_Tool
 {
     using TDep = Tuple<int, int>;
     using TStr = Tuple<uint, string>;
-    using TStrRefDict = Dictionary<uint, uint>;
     using TStrDict = Dictionary<uint, string>;
+    using TStrRefDict = Dictionary<uint, uint>;
 
-    class Script
+    partial class Script
     {
-        public Script()
-        {
-        }
-
         public void Load(string filePath)
         {
             using (var stream = File.OpenRead(filePath))
@@ -34,32 +30,33 @@ namespace Malie_Script_Tool
         }
 
 
-        readonly List<Symbol> _symbols = new List<Symbol>();
-        readonly List<Function> _functions = new List<Function>();
-        readonly List<Label> _labels = new List<Label>();
+        readonly List<Symbol> _symbols = [];
+        readonly List<Function> _functions = [];
+        readonly List<Label> _labels = [];
 
-        byte[] _seg_string;
-        byte[] _seg_code;
+        byte[] _seg_string = [];
+        byte[] _seg_code = [];
 
-        readonly List<MsgEntry> _msg_entries = new List<MsgEntry>();
+        readonly List<MsgEntry> _msg_entries = [];
 
-        byte[] _seg_message;
+        byte[] _seg_message = [];
         int _unk_dword;
 
-        readonly TStrRefDict _string_refs = new TStrRefDict();
+        readonly TStrRefDict _string_refs = [];
         // Scenario Ordered Messages
-        readonly List<TStr> _messages = new List<TStr>();
+        readonly List<TStr> _messages = [];
 
+        string _disassembly = string.Empty;
 
         void Clear()
         {
             _symbols.Clear();
             _functions.Clear();
             _labels.Clear();
-            _seg_string = null;
-            _seg_code = null;
+            _seg_string = [];
+            _seg_code = [];
             _msg_entries.Clear();
-            _seg_message = null;
+            _seg_message = [];
             _unk_dword = 0;
         }
 
@@ -77,7 +74,7 @@ namespace Malie_Script_Tool
 
                     entry.Name = ReadString(reader);
 
-                    entry.Dep = new List<TDep>();
+                    entry.Dep = [];
                     while (true)
                     {
                         var v1 = reader.ReadInt32();
@@ -204,8 +201,11 @@ namespace Malie_Script_Tool
             using (var stream = new MemoryStream(_seg_code))
             using (var reader = new BinaryReader(stream))
             {
+                var dis = new StringBuilder();
+
                 void OutputDiasm(string output)
                 {
+                    dis.AppendLine(output);
                 }
 
                 // Hack
@@ -591,7 +591,7 @@ namespace Malie_Script_Tool
                                 // If function has __cdecl call style, the next byte is parameter size ( in stack )
                                 var symb = _symbols.Find(a => a.Name == func.Name);
                                 // __cdecl
-                                if (symb.field_C == 1)
+                                if (symb != null && symb.field_C == 1)
                                 {
                                     reader.ReadByte();
                                 }
@@ -665,6 +665,8 @@ namespace Malie_Script_Tool
                         }
                     }
                 }
+
+                _disassembly = dis.ToString();
             }
         }
 
@@ -743,7 +745,7 @@ namespace Malie_Script_Tool
                         writer.Write(item.Length);
                     }
                 }
-                
+
                 void WriteMsgSegment()
                 {
                     writer.Write(_seg_message.Length);
@@ -766,6 +768,11 @@ namespace Malie_Script_Tool
 
                 writer.Flush();
             }
+        }
+
+        public void ExportDisasm(string filePath)
+        {
+            File.WriteAllText(filePath, _disassembly);
         }
 
         string GetMessage(uint index)
@@ -805,11 +812,11 @@ namespace Malie_Script_Tool
                     var ln = lineNo++;
 
                     // Ignore empty line
-                    if (line.Length == 0 || line[0] != '◆')
+                    if (line == null || line.Length == 0 || line[0] != '◆')
                         continue;
 
                     // Parse line
-                    var m = Regex.Match(line, @"◆(\w+)◆(.*$)");
+                    var m = MsgLineRegex1().Match(line);
 
                     // Check match
                     if (!m.Success || m.Groups.Count != 3)
@@ -864,14 +871,14 @@ namespace Malie_Script_Tool
             // Find all string offset
 
             var set = new HashSet<uint>();
-            
+
             foreach (var item in _string_refs)
                 set.Add(item.Value);
 
             // Create string map
-            
+
             var map = new TStrDict();
-            
+
             foreach (var item in set)
             {
                 if (!map.ContainsKey(item))
@@ -912,11 +919,11 @@ namespace Malie_Script_Tool
                     var ln = lineNo++;
 
                     // Ignore empty line
-                    if (line.Length == 0 || line[0] != '◇')
+                    if (line == null || line.Length == 0 || line[0] != '◇')
                         continue;
 
                     // Parse line
-                    var m = Regex.Match(line, @"◇(\w+)◇(.*$)");
+                    var m = MsgLineRegex2().Match(line);
 
                     // Check match
                     if (!m.Success || m.Groups.Count < 2)
@@ -994,7 +1001,7 @@ namespace Malie_Script_Tool
                 byte[] bytes;
 
                 if (size == 1)
-                    bytes = new byte[] { (byte)new_offset };
+                    bytes = [(byte)new_offset];
                 else if (size == 2)
                     bytes = BitConverter.GetBytes((ushort)new_offset);
                 else
@@ -1088,15 +1095,15 @@ namespace Malie_Script_Tool
         static string EscapeMessage(string input)
         {
             // Voice
-            input = Regex.Replace(input, @"\u0007\u0008([^\u0007\u0008]+?)\u0000", "{$1}");
+            input = VoiceMessageEscapeRegex().Replace(input, "{$1}");
             // Ruby
-            input = Regex.Replace(input, @"\u0007\u0001([^\u0007\u0001]+?)\u000A([^\u000A]+?)\u0000", "[$1]($2)");
+            input = RubyMessageEscapeRegex().Replace(input, "[$1]($2)");
             // \x07\x04
-            input = input.Replace("\u0007\u0004", "[c]");
+            input = input.Replace("\u0007\u0004", "[4]");
             // \x07\x06
-            input = input.Replace("\u0007\u0006", "[z]");
+            input = input.Replace("\u0007\u0006", "[6]");
             // \x07\x09
-            input = input.Replace("\u0007\u0009", "[s]");
+            input = input.Replace("\u0007\u0009", "[9]");
             // \x0A
             input = input.Replace("\u000A", "[n]");
             // \x0D
@@ -1108,15 +1115,15 @@ namespace Malie_Script_Tool
         static string UnescapeMessage(string input)
         {
             // Voice
-            input = Regex.Replace(input, @"\{([^\{\}]+?)\}", "\u0007\u0008$1\u0000");
+            input = VoiceMessageUnescapeRegex().Replace(input, "\u0007\u0008$1\u0000");
             // Ruby
-            input = Regex.Replace(input, @"\[([^\[\]]+?)\]\(([^\(\)]+?)\)", "\u0007\u0001$1\u000A$2\u0000");
+            input = RubyMessageUnescapeRegex().Replace(input, "\u0007\u0001$1\u000A$2\u0000");
             // \x07\x04
-            input = input.Replace("[c]", "\u0007\u0004");
+            input = input.Replace("[4]", "\u0007\u0004");
             // \x07\x06
-            input = input.Replace("[z]", "\u0007\u0006");
+            input = input.Replace("[6]", "\u0007\u0006");
             // \x07\x09
-            input = input.Replace("[s]", "\u0007\u0009");
+            input = input.Replace("[9]", "\u0007\u0009");
             // \x0A
             input = input.Replace("[n]", "\u000A");
             // \x0D
@@ -1127,17 +1134,17 @@ namespace Malie_Script_Tool
 
         class Symbol
         {
-            public string Name;
+            public string Name = string.Empty;
             public int Type;
             public int field_8;
             public int field_14;
             public int field_C; // 1=='cdecl' 2=='stdcall'
-            public List<TDep> Dep;
+            public List<TDep> Dep = [];
         }
 
         class Function
         {
-            public string Name;
+            public string Name = string.Empty;
             public int Index;
             public int field_4;
             public int Offset;
@@ -1145,7 +1152,7 @@ namespace Malie_Script_Tool
 
         class Label
         {
-            public string Name;
+            public string Name = string.Empty;
             public int Offset;
         }
 
@@ -1154,5 +1161,23 @@ namespace Malie_Script_Tool
             public int Offset;
             public int Length;
         }
+
+        [GeneratedRegex(@"◆(\w+)◆(.*$)")]
+        private static partial Regex MsgLineRegex1();
+
+        [GeneratedRegex(@"◇(\w+)◇(.*$)")]
+        private static partial Regex MsgLineRegex2();
+
+        [GeneratedRegex(@"\{([^\{\}]+?)\}")]
+        private static partial Regex VoiceMessageUnescapeRegex();
+
+        [GeneratedRegex(@"\[([^\[\]]+?)\]\(([^\(\)]+?)\)")]
+        private static partial Regex RubyMessageUnescapeRegex();
+
+        [GeneratedRegex(@"\u0007\u0008([^\u0007\u0008]+?)\u0000")]
+        private static partial Regex VoiceMessageEscapeRegex();
+
+        [GeneratedRegex(@"\u0007\u0001([^\u0007\u0001]+?)\u000A([^\u000A]+?)\u0000")]
+        private static partial Regex RubyMessageEscapeRegex();
     }
 }

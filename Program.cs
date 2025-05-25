@@ -1,28 +1,83 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
+using System.IO;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Malie_Script_Tool
 {
-    class Program
+    internal class Program
     {
         static void Main(string[] args)
         {
-            var script = new Script();
+            if (args.Length == 0)
+            {
+                Console.WriteLine("Malie Script Tool");
+                Console.WriteLine("  created by Crsky");
+                Console.WriteLine();
+                Console.WriteLine("Usage:");
+                Console.WriteLine("  Disassemble    : Malie_Script_Tool -d -in [input.dat] -out [output.txt]");
+                Console.WriteLine("  Export Strings : Malie_Script_Tool -a -in [input.dat] -out [output.txt]");
+                Console.WriteLine("  Export Text    : Malie_Script_Tool -e -in [input.dat] -out [output.txt]");
+                Console.WriteLine("  Import Text    : Malie_Script_Tool -i -in [input.dat] -out [output.dat] -txt [input.txt]");
+                Console.WriteLine();
+                Console.WriteLine("Press any key to continue...");
 
-            script.Load(@".\data\system\exec.org.dat");
+                Environment.ExitCode = 1;
+                Console.ReadKey();
 
-            script.ExportMessages(@".\data\system\exec.msg.txt");
-            script.ImportMessages(@".\data\system\exec.msg.txt");
+                return;
+            }
 
-            script.ExportStrings(@".\data\system\exec.str.txt");
-            script.ImportStrings(@".\data\system\exec.str.txt");
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            script.Save(@".data\system\exec.dat");
+            var parsedArgs = CommandLineParser.ParseArguments(args);
+
+            // Common arguments
+            CommandLineParser.EnsureArguments(parsedArgs, "-in", "-out");
+
+            var inputPath = Path.GetFullPath(parsedArgs["-in"]);
+            var outputPath = Path.GetFullPath(parsedArgs["-out"]);
+
+            // Disassemble
+            if (parsedArgs.ContainsKey("-d"))
+            {
+                var script = new Script();
+                script.Load(inputPath);
+                script.ExportDisasm(outputPath);
+                return;
+            }
+
+            // Export All Strings
+            if (parsedArgs.ContainsKey("-a"))
+            {
+                var script = new Script();
+                script.Load(inputPath);
+                script.ExportStrings(outputPath);
+                return;
+            }
+
+            // Export Text
+            if (parsedArgs.ContainsKey("-e"))
+            {
+                var script = new Script();
+                script.Load(inputPath);
+                script.ExportMessages(outputPath);
+                return;
+            }
+
+            // Import Text
+            if (parsedArgs.ContainsKey("-i"))
+            {
+                CommandLineParser.EnsureArguments(parsedArgs, "-txt");
+
+                var txtPath = Path.GetFullPath(parsedArgs["-txt"]);
+
+                var script = new Script();
+                script.Load(inputPath);
+                script.ImportMessages(txtPath);
+                script.Save(outputPath);
+
+                return;
+            }
         }
     }
 }
