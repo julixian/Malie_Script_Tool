@@ -16,6 +16,7 @@ namespace Malie_Script_Tool
                 Console.WriteLine("Usage:");
                 Console.WriteLine("  Disassemble    : Malie_Script_Tool -d -in [input.dat] -out [output.txt]");
                 Console.WriteLine("  Export Strings : Malie_Script_Tool -a -in [input.dat] -out [output.txt]");
+                Console.WriteLine("  Import Strings : Malie_Script_Tool -s -in [input.dat] -out [output.dat] -txt [input.txt]");
                 Console.WriteLine("  Export Text    : Malie_Script_Tool -e -in [input.dat] -out [output.txt]");
                 Console.WriteLine("  Import Text    : Malie_Script_Tool -i -in [input.dat] -out [output.dat] -txt [input.txt]");
                 Console.WriteLine();
@@ -74,6 +75,20 @@ namespace Malie_Script_Tool
                 var script = new Script();
                 script.Load(inputPath);
                 script.ImportMessages(txtPath);
+                script.Save(outputPath);
+
+                return;
+            }
+
+            if (parsedArgs.ContainsKey("-s"))
+            {
+                CommandLineParser.EnsureArguments(parsedArgs, "-txt");
+
+                var txtPath = Path.GetFullPath(parsedArgs["-txt"]);
+
+                var script = new Script();
+                script.Load(inputPath);
+                script.ImportStrings(txtPath);
                 script.Save(outputPath);
 
                 return;

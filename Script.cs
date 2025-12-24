@@ -1094,41 +1094,88 @@ namespace Malie_Script_Tool
 
         static string EscapeMessage(string input)
         {
-            // Voice
-            input = VoiceMessageEscapeRegex().Replace(input, "{$1}");
-            // Ruby
-            input = RubyMessageEscapeRegex().Replace(input, "[$1]($2)");
-            // \x07\x04
-            input = input.Replace("\u0007\u0004", "[4]");
-            // \x07\x06
-            input = input.Replace("\u0007\u0006", "[6]");
-            // \x07\x09
-            input = input.Replace("\u0007\u0009", "[9]");
-            // \x0A
-            input = input.Replace("\u000A", "[n]");
-            // \x0D
-            input = input.Replace("\u000D", "[r]");
-
+            input = MessageEscapeRegex1().Replace(input, "[n]");
+            input = MessageEscapeRegex2().Replace(input, "[r]");
+            input = MessageEscapeRegex3().Replace(input, "[center]");
+            input = MessageEscapeRegex4().Replace(input, "[汗]");
+            input = MessageEscapeRegex5().Replace(input, "[爱]");
+            input = MessageEscapeRegex6().Replace(input, "[$2/$1]");
+            input = MessageEscapeRegex7().Replace(input, "{CR}");
+            input = MessageEscapeRegex8().Replace(input, "{LF}");
+            input = MessageEscapeRegex9().Replace(input, "[voice:$1]$2[/voice]");
+            input = MessageEscapeRegex10().Replace(input, "[无语]");
+            input = MessageEscapeRegex11().Replace(input, "[哭]");
+            input = MessageEscapeRegex12().Replace(input, "[生气]");
+            input = MessageEscapeRegex13().Replace(input, "[烦]");
+            input = MessageEscapeRegex14().Replace(input, "[晕]");
+            input = MessageEscapeRegex15().Replace(input, "[unk2]");
+            input = MessageEscapeRegex16().Replace(input, "[unk4]");
+            input = MessageEscapeRegex17().Replace(input, "[unk3]");
+            input = MessageEscapeRegex18().Replace(input, "[voice:$1]");
+            input = MessageEscapeRegex19().Replace(input, "[/voice]");
+            input = MessageEscapeRegex20().Replace(input, match =>
+            {
+                char rawChar = match.Groups[1].Value[0];
+                string content = match.Groups[2].Value;
+                string hex = ((byte)rawChar).ToString("x2");
+                return $"[big:{hex}]{content}[/big]";
+            });
+            input = MessageEscapeRegex21().Replace(input, match =>
+            {
+                string rawChars = match.Groups[1].Value;
+                string content = match.Groups[2].Value;
+                StringBuilder hexBuilder = new StringBuilder();
+                foreach (char c in rawChars)
+                {
+                    hexBuilder.Append(((byte)c).ToString("x2"));
+                }
+                return $"[color:{hexBuilder.ToString()}]{content}[/color]";
+            });
             return input;
         }
 
         static string UnescapeMessage(string input)
         {
-            // Voice
-            input = VoiceMessageUnescapeRegex().Replace(input, "\u0007\u0008$1\u0000");
-            // Ruby
-            input = RubyMessageUnescapeRegex().Replace(input, "\u0007\u0001$1\u000A$2\u0000");
-            // \x07\x04
-            input = input.Replace("[4]", "\u0007\u0004");
-            // \x07\x06
-            input = input.Replace("[6]", "\u0007\u0006");
-            // \x07\x09
-            input = input.Replace("[9]", "\u0007\u0009");
-            // \x0A
-            input = input.Replace("[n]", "\u000A");
-            // \x0D
-            input = input.Replace("[r]", "\u000D");
-
+            input = MessageUnescapeRegex1().Replace(input, "\u000d");
+            input = MessageUnescapeRegex2().Replace(input, "\u000a");
+            input = MessageUnescapeRegex3().Replace(input, "\u0007\u0006");
+            input = MessageUnescapeRegex4().Replace(input, "\u0007\u0004");
+            input = MessageUnescapeRegex5().Replace(input, "\u0007\u0002\u0001");
+            input = MessageUnescapeRegex6().Replace(input, "\u0006\u0000");
+            input = MessageUnescapeRegex7().Replace(input, "\u0006\u0001");
+            input = MessageUnescapeRegex8().Replace(input, "\u0006\u0002");
+            input = MessageUnescapeRegex9().Replace(input, "\u0006\u0003");
+            input = MessageUnescapeRegex10().Replace(input, "\u0006\u0004");
+            input = MessageUnescapeRegex11().Replace(input, "\u0006\u0005");
+            input = MessageUnescapeRegex12().Replace(input, "\u0006\u0006");
+            input = MessageUnescapeRegex13().Replace(input, "\u0006\u0007");
+            input = MessageUnescapeRegex14().Replace(input, "\u0003\u001e");
+            input = MessageUnescapeRegex15().Replace(input, "\u0007\u0002\u0002");
+            input = MessageUnescapeRegex16().Replace(input, "\u0007\u0008$1\u0000");
+            input = MessageUnescapeRegex17().Replace(input, "\u0007\u0009");
+            input = MessageUnescapeRegex18().Replace(input, match =>
+            {
+                string hex = match.Groups[1].Value;
+                char c = (char)Convert.ToByte(hex, 16);
+                return "\u0003" + c;
+            });
+            input = MessageUnescapeRegex19().Replace(input, "\u0004");
+            input = MessageUnescapeRegex20().Replace(input, "\u0002");
+            input = MessageUnescapeRegex21().Replace(input, match =>
+            {
+                string hex = match.Groups[1].Value;
+                StringBuilder sb = new StringBuilder();
+                sb.Append("\u0001");
+                for (int i = 0; i < hex.Length; i += 2)
+                {
+                    string byteHex = hex.Substring(i, 2);
+                    byte b = Convert.ToByte(byteHex, 16);
+                    sb.Append((char)b);
+                }
+                return sb.ToString();
+            });
+            input = MessageUnescapeRegex22().Replace(input, "$1");
+            input = MessageUnescapeRegex23().Replace(input, "\u0007\u0001$2\u000a$1\u0000");
             return input;
         }
 
@@ -1168,16 +1215,136 @@ namespace Malie_Script_Tool
         [GeneratedRegex(@"◇(\w+)◇(.*$)")]
         private static partial Regex MsgLineRegex2();
 
-        [GeneratedRegex(@"\{([^\{\}]+?)\}")]
-        private static partial Regex VoiceMessageUnescapeRegex();
+        [GeneratedRegex(@"\u0007\u0006")]
+        private static partial Regex MessageEscapeRegex1();
 
-        [GeneratedRegex(@"\[([^\[\]]+?)\]\(([^\(\)]+?)\)")]
-        private static partial Regex RubyMessageUnescapeRegex();
+        [GeneratedRegex(@"\u0007\u0004")]
+        private static partial Regex MessageEscapeRegex2();
 
-        [GeneratedRegex(@"\u0007\u0008([^\u0007\u0008]+?)\u0000")]
-        private static partial Regex VoiceMessageEscapeRegex();
+        [GeneratedRegex(@"\u0007\u0002\u0001")]
+        private static partial Regex MessageEscapeRegex3();
 
-        [GeneratedRegex(@"\u0007\u0001([^\u0007\u0001]+?)\u000A([^\u000A]+?)\u0000")]
-        private static partial Regex RubyMessageEscapeRegex();
+        [GeneratedRegex(@"\u0006\u0001")]
+        private static partial Regex MessageEscapeRegex4();
+
+        [GeneratedRegex(@"\u0006\u0000")]
+        private static partial Regex MessageEscapeRegex5();
+
+        [GeneratedRegex(@"\u0007\u0001(.*?)\u000a(.*?)\u0000")]
+        private static partial Regex MessageEscapeRegex6();
+
+        [GeneratedRegex(@"\u000d")]
+        private static partial Regex MessageEscapeRegex7();
+
+        [GeneratedRegex(@"\u000a")]
+        private static partial Regex MessageEscapeRegex8();
+
+        [GeneratedRegex(@"\u0007\u0008(.*?)\u0000(.*?)\u0007\u0009")]
+        private static partial Regex MessageEscapeRegex9();
+
+        [GeneratedRegex(@"\u0006\u0002")]
+        private static partial Regex MessageEscapeRegex10();
+
+        [GeneratedRegex(@"\u0006\u0003")]
+        private static partial Regex MessageEscapeRegex11();
+
+        [GeneratedRegex(@"\u0006\u0004")]
+        private static partial Regex MessageEscapeRegex12();
+
+        [GeneratedRegex(@"\u0006\u0005")]
+        private static partial Regex MessageEscapeRegex13();
+
+        [GeneratedRegex(@"\u0006\u0006")]
+        private static partial Regex MessageEscapeRegex14();
+
+        [GeneratedRegex(@"\u0006\u0007")]
+        private static partial Regex MessageEscapeRegex15();
+
+        [GeneratedRegex(@"\u0003\u001e")]
+        private static partial Regex MessageEscapeRegex16();
+
+        [GeneratedRegex(@"\u0007\u0002\u0002")]
+        private static partial Regex MessageEscapeRegex17();
+
+        [GeneratedRegex(@"\u0007\u0008(.*?)\u0000")]
+        private static partial Regex MessageEscapeRegex18();
+
+        [GeneratedRegex(@"\u0007\u0009")]
+        private static partial Regex MessageEscapeRegex19();
+
+        [GeneratedRegex(@"\u0003([\u0000-\u00ff])(.*?)\u0004")]
+        private static partial Regex MessageEscapeRegex20();
+
+        [GeneratedRegex(@"\u0001([\u0000-\u00ff]{3})(.*?)\u0002")]
+        private static partial Regex MessageEscapeRegex21();
+
+        [GeneratedRegex(@"\{CR\}")]
+        private static partial Regex MessageUnescapeRegex1();
+
+        [GeneratedRegex(@"\{LF\}")]
+        private static partial Regex MessageUnescapeRegex2();
+
+        [GeneratedRegex(@"\[n\]")]
+        private static partial Regex MessageUnescapeRegex3();
+
+        [GeneratedRegex(@"\[r\]")]
+        private static partial Regex MessageUnescapeRegex4();
+
+        [GeneratedRegex(@"\[center\]")]
+        private static partial Regex MessageUnescapeRegex5();
+
+        [GeneratedRegex(@"\[爱\]")]
+        private static partial Regex MessageUnescapeRegex6();
+
+        [GeneratedRegex(@"\[汗\]")]
+        private static partial Regex MessageUnescapeRegex7();
+
+        [GeneratedRegex(@"\[无语\]")]
+        private static partial Regex MessageUnescapeRegex8();
+
+        [GeneratedRegex(@"\[哭\]")]
+        private static partial Regex MessageUnescapeRegex9();
+
+        [GeneratedRegex(@"\[生气\]")]
+        private static partial Regex MessageUnescapeRegex10();
+
+        [GeneratedRegex(@"\[烦\]")]
+        private static partial Regex MessageUnescapeRegex11();
+
+        [GeneratedRegex(@"\[晕\]")]
+        private static partial Regex MessageUnescapeRegex12();
+
+        [GeneratedRegex(@"\[unk2\]")]
+        private static partial Regex MessageUnescapeRegex13();
+
+        [GeneratedRegex(@"\[unk4\]")]
+        private static partial Regex MessageUnescapeRegex14();
+
+        [GeneratedRegex(@"\[unk3\]")]
+        private static partial Regex MessageUnescapeRegex15();
+
+        [GeneratedRegex(@"\[voice:(.*?)\]")]
+        private static partial Regex MessageUnescapeRegex16();
+
+        [GeneratedRegex(@"\[/voice\]")]
+        private static partial Regex MessageUnescapeRegex17();
+
+        [GeneratedRegex(@"\[big:(.*?)\]")]
+        private static partial Regex MessageUnescapeRegex18();
+
+        [GeneratedRegex(@"\[/big\]")]
+        private static partial Regex MessageUnescapeRegex19();
+
+        [GeneratedRegex(@"\[/color\]")]
+        private static partial Regex MessageUnescapeRegex20();
+
+        [GeneratedRegex(@"\[color:(.*?)\]")]
+        private static partial Regex MessageUnescapeRegex21();
+
+        [GeneratedRegex(@"\[([^/]*?)\]")]
+        private static partial Regex MessageUnescapeRegex22();
+
+        [GeneratedRegex(@"\[(.*?)/(.*?)\]")]
+        private static partial Regex MessageUnescapeRegex23();
     }
 }
