@@ -1100,9 +1100,6 @@ namespace Malie_Script_Tool
             input = MessageEscapeRegex4().Replace(input, "[汗]");
             input = MessageEscapeRegex5().Replace(input, "[爱]");
             input = MessageEscapeRegex6().Replace(input, "[$2/$1]");
-            input = MessageEscapeRegex7().Replace(input, "{CR}");
-            input = MessageEscapeRegex8().Replace(input, "{LF}");
-            input = MessageEscapeRegex9().Replace(input, "[voice:$1]$2[/voice]");
             input = MessageEscapeRegex10().Replace(input, "[无语]");
             input = MessageEscapeRegex11().Replace(input, "[哭]");
             input = MessageEscapeRegex12().Replace(input, "[生气]");
@@ -1131,6 +1128,10 @@ namespace Malie_Script_Tool
                 }
                 return $"[color:{hexBuilder.ToString()}]{content}[/color]";
             });
+            input = MessageEscapeRegex7().Replace(input, "{CR}");
+            input = MessageEscapeRegex8().Replace(input, "{LF}");
+            input = MessageEscapeRegex22().Replace(input, "{VT}");
+            input = MessageEscapeRegex23().Replace(input, "{FF}");
             return input;
         }
 
@@ -1138,6 +1139,8 @@ namespace Malie_Script_Tool
         {
             input = MessageUnescapeRegex1().Replace(input, "\u000d");
             input = MessageUnescapeRegex2().Replace(input, "\u000a");
+            input = MessageUnescapeRegex24().Replace(input, "\u000b");
+            input = MessageUnescapeRegex25().Replace(input, "\u000c");
             input = MessageUnescapeRegex3().Replace(input, "\u0007\u0006");
             input = MessageUnescapeRegex4().Replace(input, "\u0007\u0004");
             input = MessageUnescapeRegex5().Replace(input, "\u0007\u0002\u0001");
@@ -1278,6 +1281,12 @@ namespace Malie_Script_Tool
         [GeneratedRegex(@"\u0001([\u0000-\u00ff]{3})(.*?)\u0002")]
         private static partial Regex MessageEscapeRegex21();
 
+        [GeneratedRegex(@"\u000b")]
+        private static partial Regex MessageEscapeRegex22();
+
+        [GeneratedRegex(@"\u000c")]
+        private static partial Regex MessageEscapeRegex23();
+
         [GeneratedRegex(@"\{CR\}")]
         private static partial Regex MessageUnescapeRegex1();
 
@@ -1346,5 +1355,11 @@ namespace Malie_Script_Tool
 
         [GeneratedRegex(@"\[(.*?)/(.*?)\]")]
         private static partial Regex MessageUnescapeRegex23();
+
+        [GeneratedRegex(@"\{VT\}")]
+        private static partial Regex MessageUnescapeRegex24();
+
+        [GeneratedRegex(@"\{FF\}")]
+        private static partial Regex MessageUnescapeRegex25();
     }
 }
